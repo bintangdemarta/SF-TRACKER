@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\ShiftSession;
-use App\Services\FinancialMetricsService;
+use App\Services\PerformanceMetricsService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -22,15 +22,24 @@ class FinancialDashboard extends Component
     {
         $shift = $this->activeShift;
 
-        return $shift ? app(FinancialMetricsService::class)->summarize($shift) : null;
+        return $shift ? app(PerformanceMetricsService::class)->summarize($shift) : null;
     }
 
     public function getTodayMetricsProperty(): array
     {
-        return app(FinancialMetricsService::class)->summarizeForPeriod(
+        return app(PerformanceMetricsService::class)->summarizeForPeriod(
             Auth::user(),
             now()->startOfDay(),
             now()->endOfDay(),
+        );
+    }
+
+    public function getWeekMetricsProperty(): array
+    {
+        return app(PerformanceMetricsService::class)->summarizeForPeriod(
+            Auth::user(),
+            now()->startOfWeek(),
+            now()->endOfWeek(),
         );
     }
 

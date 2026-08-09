@@ -14,6 +14,7 @@ class Expense extends Model
         'amount',
         'payment_source',
         'odometer',
+        'fuel_liters',
         'notes',
         'is_reimbursable',
         'reimbursed_at',
@@ -25,6 +26,7 @@ class Expense extends Model
         return [
             'is_reimbursable' => 'boolean',
             'reimbursed_at' => 'datetime',
+            'fuel_liters' => 'float',
         ];
     }
 

@@ -62,17 +62,6 @@ class FinancialMetricsServiceTest extends TestCase
         $this->assertSame(25000, $this->metrics->operationalCost($shift));
     }
 
-    public function test_fuel_maintenance_cost_excludes_micro_and_sinking_fund_categories(): void
-    {
-        $user = User::factory()->create();
-        $shift = $this->makeShift($user);
-        Expense::create(['user_id' => $user->id, 'shift_session_id' => $shift->id, 'category_id' => $this->bbm->id, 'amount' => 20000, 'payment_source' => 'cash']);
-        Expense::create(['user_id' => $user->id, 'shift_session_id' => $shift->id, 'category_id' => $this->pemeliharaan->id, 'amount' => 15000, 'payment_source' => 'digital_balance']);
-        Expense::create(['user_id' => $user->id, 'shift_session_id' => $shift->id, 'category_id' => $this->parkir->id, 'amount' => 5000, 'payment_source' => 'cash']);
-
-        $this->assertSame(35000, $this->metrics->fuelMaintenanceCost($shift));
-    }
-
     public function test_net_profit_is_gross_revenue_minus_operational_cost(): void
     {
         $user = User::factory()->create();
@@ -93,30 +82,25 @@ class FinancialMetricsServiceTest extends TestCase
         $this->assertSame(-240000, $this->metrics->netProfit($shift));
     }
 
-    public function test_cost_per_km_is_null_when_shift_has_no_recorded_distance(): void
-    {
-        $user = User::factory()->create();
-        $shift = $this->makeShift($user, ['end_odometer' => null]);
-        Expense::create(['user_id' => $user->id, 'shift_session_id' => $shift->id, 'category_id' => $this->bbm->id, 'amount' => 20000, 'payment_source' => 'cash']);
-
-        $this->assertNull($this->metrics->costPerKm($shift));
-    }
-
-    public function test_cost_per_km_divides_fuel_maintenance_cost_by_distance(): void
-    {
-        $user = User::factory()->create();
-        $shift = $this->makeShift($user, ['start_odometer' => 1000, 'end_odometer' => 1050]);
-        Expense::create(['user_id' => $user->id, 'shift_session_id' => $shift->id, 'category_id' => $this->bbm->id, 'amount' => 25000, 'payment_source' => 'cash']);
-
-        $this->assertSame(500.0, $this->metrics->costPerKm($shift));
-    }
-
     public function test_hourly_rate_is_null_when_zero_hours_elapsed(): void
     {
         $user = User::factory()->create();
         $shift = $this->makeShift($user, ['started_at' => now()]);
 
         $this->assertSame(0.0, $this->metrics->hoursWorked($shift));
+        $this->assertNull($this->metrics->hourlyRate($shift));
+    }
+
+    public function test_hourly_rate_is_null_for_sub_minute_duration_even_with_nonzero_hours(): void
+    {
+        // diffInMinutes() is precise/fractional, so a 30s-old shift yields
+        // a tiny nonzero hours_worked. hourlyRate() must still refuse to
+        // extrapolate a Rp/hour figure from a near-instantaneous duration.
+        $user = User::factory()->create();
+        $shift = $this->makeShift($user, ['started_at' => now()->subSeconds(30)]);
+        $shift->tripLogs()->create(['fare_amount' => 50000, 'tip_cash' => 0, 'tip_app' => 0, 'points_earned' => 0]);
+
+        $this->assertLessThan(1 / 60, $this->metrics->hoursWorked($shift));
         $this->assertNull($this->metrics->hourlyRate($shift));
     }
 
@@ -147,9 +131,7 @@ class FinancialMetricsServiceTest extends TestCase
         $this->assertSame(35000, $summary['gross_revenue']);
         $this->assertSame(10000, $summary['operational_cost']);
         $this->assertSame(25000, $summary['net_profit']);
-        $this->assertSame(10000, $summary['fuel_maintenance_cost']);
         $this->assertSame(40.0, $summary['distance_km']);
-        $this->assertSame(250.0, $summary['cost_per_km']);
     }
 
     public function test_summarize_for_period_aggregates_multiple_shifts(): void
@@ -218,7 +200,6 @@ class FinancialMetricsServiceTest extends TestCase
         $this->assertSame(0, $summary['gross_revenue']);
         $this->assertSame(0, $summary['operational_cost']);
         $this->assertSame(0, $summary['net_profit']);
-        $this->assertNull($summary['cost_per_km']);
         $this->assertNull($summary['hourly_rate']);
     }
 }

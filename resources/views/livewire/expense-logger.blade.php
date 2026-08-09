@@ -91,15 +91,27 @@
                 </div>
 
                 @if ($this->showOdometerField)
-                    <div>
-                        <label for="odometer" class="block text-sm font-medium text-gray-800 mb-1">Odometer Saat Isi (KM)</label>
-                        <input id="odometer" type="number" inputmode="numeric" autocomplete="off" wire:model="odometer"
-                            class="w-full min-h-[48px] rounded-lg border-gray-300 text-xl py-3 px-3 focus:border-indigo-700 focus:ring-indigo-700"
-                            placeholder="opsional">
-                        @error('odometer')
-                            <p class="text-red-800 text-sm font-medium mt-1" role="alert">{{ $message }}</p>
-                        @enderror
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="odometer" class="block text-sm font-medium text-gray-800 mb-1">Odometer Saat Isi (KM)</label>
+                            <input id="odometer" type="number" inputmode="numeric" autocomplete="off" wire:model="odometer"
+                                class="w-full min-h-[48px] rounded-lg border-gray-300 text-xl py-3 px-3 focus:border-indigo-700 focus:ring-indigo-700"
+                                placeholder="opsional">
+                            @error('odometer')
+                                <p class="text-red-800 text-sm font-medium mt-1" role="alert">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label for="fuel_liters" class="block text-sm font-medium text-gray-800 mb-1">Volume BBM (Liter)</label>
+                            <input id="fuel_liters" type="number" step="0.01" inputmode="decimal" autocomplete="off" wire:model="fuel_liters"
+                                class="w-full min-h-[48px] rounded-lg border-gray-300 text-xl py-3 px-3 focus:border-indigo-700 focus:ring-indigo-700"
+                                placeholder="opsional">
+                            @error('fuel_liters')
+                                <p class="text-red-800 text-sm font-medium mt-1" role="alert">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
+                    <p class="text-xs text-gray-500 -mt-2">Isi liter buat hitung efisiensi BBM (KM/L) di ringkasan performa.</p>
                 @endif
 
                 <div role="radiogroup" aria-labelledby="payment_source_label">

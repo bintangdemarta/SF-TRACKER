@@ -106,6 +106,95 @@ class ExpenseLoggerTest extends TestCase
             ->assertDispatched('wallet-updated');
     }
 
+    public function test_bbm_expense_stores_fuel_liters(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test(ExpenseLogger::class)
+            ->set('category_id', $this->bbm->id)
+            ->set('amount', 20000)
+            ->set('fuel_liters', '2.5')
+            ->set('payment_source', 'digital_balance')
+            ->call('logExpense');
+
+        $this->assertDatabaseHas('expenses', [
+            'category_id' => $this->bbm->id,
+            'fuel_liters' => 2.5,
+        ]);
+    }
+
+    public function test_odometer_zero_is_stored_as_a_real_value_not_null(): void
+    {
+        // Regression: a naive `?: null` fallback would treat a brand-new
+        // vehicle's odometer reading of 0 as "blank" and drop it. 0 is a
+        // legitimate value here, distinct from "not provided".
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test(ExpenseLogger::class)
+            ->set('category_id', $this->bbm->id)
+            ->set('amount', 20000)
+            ->set('odometer', '0')
+            ->set('payment_source', 'digital_balance')
+            ->call('logExpense')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('expenses', [
+            'category_id' => $this->bbm->id,
+            'odometer' => 0,
+        ]);
+    }
+
+    public function test_fuel_liters_is_optional_for_bbm_expense(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test(ExpenseLogger::class)
+            ->set('category_id', $this->bbm->id)
+            ->set('amount', 20000)
+            ->set('payment_source', 'digital_balance')
+            ->call('logExpense')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('expenses', [
+            'category_id' => $this->bbm->id,
+            'fuel_liters' => null,
+        ]);
+    }
+
+    public function test_fuel_liters_rejects_zero_or_negative(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test(ExpenseLogger::class)
+            ->set('category_id', $this->bbm->id)
+            ->set('amount', 20000)
+            ->set('fuel_liters', '0')
+            ->set('payment_source', 'digital_balance')
+            ->call('logExpense')
+            ->assertHasErrors(['fuel_liters']);
+    }
+
+    public function test_non_bbm_category_ignores_submitted_fuel_liters(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test(ExpenseLogger::class)
+            ->set('category_id', $this->parkir->id)
+            ->set('amount', 3000)
+            ->set('payment_source', 'digital_balance')
+            ->call('logExpense');
+
+        $this->assertDatabaseHas('expenses', [
+            'category_id' => $this->parkir->id,
+            'fuel_liters' => null,
+        ]);
+    }
+
     public function test_bbm_category_reveals_odometer_field(): void
     {
         $user = User::factory()->create();

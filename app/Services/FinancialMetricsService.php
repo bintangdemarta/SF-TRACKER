@@ -8,9 +8,17 @@ use App\Models\TripLog;
 use App\Models\User;
 use Carbon\CarbonInterface;
 
+/**
+ * Pure financial-ledger arithmetic: money in, money out, profit, time.
+ * Vehicle/operational efficiency metrics (Cost per KM, Fuel Efficiency,
+ * Target Achievement) live in PerformanceMetricsService, which composes
+ * this service for the figures it reuses (gross revenue, net profit,
+ * hours worked) rather than duplicating them.
+ */
 class FinancialMetricsService
 {
-    protected const COST_CATEGORY_TYPES = ['bbm', 'pemeliharaan'];
+    /** Below this, dividing by elapsed hours amplifies noise into a misleadingly huge extrapolated rate. */
+    protected const MIN_HOURS_FOR_RATE = 1 / 60;
 
     public function grossRevenue(ShiftSession $shift): int
     {
@@ -29,24 +37,6 @@ class FinancialMetricsService
         return $this->grossRevenue($shift) - $this->operationalCost($shift);
     }
 
-    public function fuelMaintenanceCost(ShiftSession $shift): int
-    {
-        return (int) $shift->expenses()
-            ->whereHas('category', fn ($q) => $q->whereIn('type', self::COST_CATEGORY_TYPES))
-            ->sum('amount');
-    }
-
-    public function costPerKm(ShiftSession $shift): ?float
-    {
-        $distance = $shift->totalDistanceKm();
-
-        if ($distance <= 0) {
-            return null;
-        }
-
-        return round($this->fuelMaintenanceCost($shift) / $distance, 2);
-    }
-
     public function hoursWorked(ShiftSession $shift): float
     {
         $end = $shift->ended_at ?? now();
@@ -59,7 +49,7 @@ class FinancialMetricsService
     {
         $hours = $this->hoursWorked($shift);
 
-        if ($hours <= 0) {
+        if ($hours < self::MIN_HOURS_FOR_RATE) {
             return null;
         }
 
@@ -67,7 +57,7 @@ class FinancialMetricsService
     }
 
     /**
-     * @return array{gross_revenue:int,operational_cost:int,net_profit:int,fuel_maintenance_cost:int,distance_km:float,cost_per_km:?float,hours_worked:float,hourly_rate:?float}
+     * @return array{gross_revenue:int,operational_cost:int,net_profit:int,distance_km:float,hours_worked:float,hourly_rate:?float}
      */
     public function summarize(ShiftSession $shift): array
     {
@@ -78,9 +68,7 @@ class FinancialMetricsService
             'gross_revenue' => $grossRevenue,
             'operational_cost' => $operationalCost,
             'net_profit' => $grossRevenue - $operationalCost,
-            'fuel_maintenance_cost' => $this->fuelMaintenanceCost($shift),
             'distance_km' => $shift->totalDistanceKm(),
-            'cost_per_km' => $this->costPerKm($shift),
             'hours_worked' => $this->hoursWorked($shift),
             'hourly_rate' => $this->hourlyRate($shift),
         ];
@@ -88,11 +76,11 @@ class FinancialMetricsService
 
     /**
      * Aggregate metrics across all of a user's shifts starting within [$from, $to].
-     * Expenses are matched by their own created_at so standalone entries
-     * (shift_session_id null, e.g. servis dirumah) are still counted for
-     * the period they actually happened in.
+     * Expenses/trips are matched by their own created_at so standalone
+     * entries (shift_session_id null, e.g. servis dirumah) are still
+     * counted for the period they actually happened in.
      *
-     * @return array{shift_count:int,gross_revenue:int,operational_cost:int,net_profit:int,fuel_maintenance_cost:int,distance_km:float,cost_per_km:?float,hours_worked:float,hourly_rate:?float}
+     * @return array{shift_count:int,gross_revenue:int,operational_cost:int,net_profit:int,distance_km:float,hours_worked:float,hourly_rate:?float}
      */
     public function summarizeForPeriod(User $user, CarbonInterface $from, CarbonInterface $to): array
     {
@@ -108,11 +96,6 @@ class FinancialMetricsService
             ->whereBetween('created_at', [$from, $to])
             ->sum('amount');
 
-        $fuelMaintenanceCost = (int) Expense::where('user_id', $user->id)
-            ->whereBetween('created_at', [$from, $to])
-            ->whereHas('category', fn ($q) => $q->whereIn('type', self::COST_CATEGORY_TYPES))
-            ->sum('amount');
-
         $shifts = ShiftSession::where('user_id', $user->id)
             ->whereBetween('started_at', [$from, $to])
             ->get(['id', 'start_odometer', 'end_odometer', 'started_at', 'ended_at']);
@@ -126,11 +109,9 @@ class FinancialMetricsService
             'gross_revenue' => $grossRevenue,
             'operational_cost' => $operationalCost,
             'net_profit' => $netProfit,
-            'fuel_maintenance_cost' => $fuelMaintenanceCost,
             'distance_km' => $distanceKm,
-            'cost_per_km' => $distanceKm > 0 ? round($fuelMaintenanceCost / $distanceKm, 2) : null,
             'hours_worked' => $hoursWorked,
-            'hourly_rate' => $hoursWorked > 0 ? round($netProfit / $hoursWorked, 2) : null,
+            'hourly_rate' => $hoursWorked >= self::MIN_HOURS_FOR_RATE ? round($netProfit / $hoursWorked, 2) : null,
         ];
     }
 }
