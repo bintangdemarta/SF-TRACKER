@@ -15,8 +15,11 @@ class FinancialMetricsServiceTest extends TestCase
     use RefreshDatabase;
 
     protected FinancialMetricsService $metrics;
+
     protected ExpenseCategory $bbm;
+
     protected ExpenseCategory $pemeliharaan;
+
     protected ExpenseCategory $parkir;
 
     protected function setUp(): void

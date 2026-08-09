@@ -10,6 +10,7 @@ use Livewire\Component;
 class WalletLedger extends Component
 {
     public int $cashBalance = 0;
+
     public int $digitalBalance = 0;
 
     public $transfer_amount = '';

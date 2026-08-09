@@ -6,6 +6,7 @@ use App\Livewire\ExpenseLogger;
 use App\Models\ExpenseCategory;
 use App\Models\ShiftSession;
 use App\Models\User;
+use App\Services\WalletReconciliationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -15,6 +16,7 @@ class ExpenseLoggerTest extends TestCase
     use RefreshDatabase;
 
     protected ExpenseCategory $bbm;
+
     protected ExpenseCategory $parkir;
 
     protected function setUp(): void
@@ -42,7 +44,7 @@ class ExpenseLoggerTest extends TestCase
             'started_at' => now(), 'status' => 'active',
         ]);
         $shift->tripLogs()->create(['fare_amount' => 0, 'tip_cash' => 30000, 'tip_app' => 0, 'points_earned' => 0]);
-        app(\App\Services\WalletReconciliationService::class)
+        app(WalletReconciliationService::class)
             ->recordTripIncome($shift->tripLogs()->first());
 
         Livewire::actingAs($user)

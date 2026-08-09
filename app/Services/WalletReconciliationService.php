@@ -57,8 +57,8 @@ class WalletReconciliationService
         if ($wallet === 'cash') {
             $available = $this->cashBalance($expense->user);
             if ($expense->amount > $available) {
-                $warning = "Pengeluaran tunai Rp".number_format($expense->amount, 0, ',', '.')
-                    ." melebihi kas fisik yang tersedia (Rp".number_format($available, 0, ',', '.').").";
+                $warning = 'Pengeluaran tunai Rp'.number_format($expense->amount, 0, ',', '.')
+                    .' melebihi kas fisik yang tersedia (Rp'.number_format($available, 0, ',', '.').').';
             }
         }
 

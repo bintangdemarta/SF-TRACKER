@@ -15,6 +15,24 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
+        <div
+            x-data="{ online: navigator.onLine }"
+            x-init="
+                window.addEventListener('online', () => online = true);
+                window.addEventListener('offline', () => online = false);
+            "
+        >
+            <div
+                x-show="!online"
+                x-cloak
+                role="status"
+                aria-live="assertive"
+                class="fixed inset-x-0 top-0 z-50 bg-red-800 text-white text-sm font-medium text-center py-2 px-4"
+            >
+                📡 Offline — perubahan belum tersimpan ke server. Sambungkan ulang internet sebelum lanjut input.
+            </div>
+        </div>
+
         <div class="min-h-screen bg-gray-100">
             <livewire:layout.navigation />
 

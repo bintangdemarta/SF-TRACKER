@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Livewire\ShiftTracker;
 use App\Models\ShiftSession;
-use App\Models\TripLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
