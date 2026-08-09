@@ -6,7 +6,11 @@
     'ogType' => 'website',
 ])
 @php
-    $trimmedDescription = \Illuminate\Support\Str::limit($description, 157, '...');
+    // 155-char ceiling: Google's SERP snippet truncates ~155-160 chars on
+    // desktop. A hard limit here is a safety net — callers should already
+    // be supplying a description sized to land in the 150-155 range so
+    // this never actually fires and clips mid-thought.
+    $trimmedDescription = \Illuminate\Support\Str::limit($description, 155, '...');
 @endphp
 
 <title>{{ $title }}</title>

@@ -30,7 +30,11 @@ class RobotsController extends Controller
             'Sitemap: '.route('sitemap'),
         ];
 
-        return response(implode("\n", $lines)."\n")
-            ->header('Content-Type', 'text/plain');
+        $body = implode("\n", $lines)."\n";
+
+        return response($body)
+            ->header('Content-Type', 'text/plain')
+            ->header('Cache-Control', 'public, max-age=3600')
+            ->header('ETag', '"'.md5($body).'"');
     }
 }

@@ -18,7 +18,7 @@ class LandingController extends Controller
         }
 
         $title = config('app.name').' - Catat Keuangan & Performa Driver ShopeeFood';
-        $description = 'Catatan keuangan driver ShopeeFood real-time: kalkulator profit ShopeeFood, cost per KM, dan efisiensi bensin motor. Gratis, langsung pakai.';
+        $description = 'Catatan keuangan driver ShopeeFood real-time: kalkulator profit ShopeeFood otomatis, cost per KM, dan efisiensi bensin motor per shift. Gratis dipakai.';
 
         return view('landing', [
             'title' => $title,

@@ -46,15 +46,33 @@ class SeoTest extends TestCase
         $response->assertSee('Catatan keuangan driver', false);
     }
 
-    public function test_landing_page_meta_description_is_under_160_characters(): void
+    public function test_landing_page_meta_description_lands_in_150_to_155_char_snippet_window(): void
     {
+        // Google truncates the SERP snippet around 155-160 chars on
+        // desktop — landing meaningfully under 150 wastes available
+        // snippet real estate instead of surfacing more keyword context.
         $response = $this->get('/');
         $html = $response->getContent();
 
         preg_match('/<meta name="description" content="([^"]*)"/', $html, $matches);
 
         $this->assertNotEmpty($matches, 'meta description tag not found');
-        $this->assertLessThanOrEqual(160, strlen(html_entity_decode($matches[1])));
+        $length = strlen(html_entity_decode($matches[1]));
+        $this->assertGreaterThanOrEqual(150, $length);
+        $this->assertLessThanOrEqual(155, $length);
+    }
+
+    public function test_landing_page_title_lands_in_50_to_60_char_pixel_safe_window(): void
+    {
+        $response = $this->get('/');
+        $html = $response->getContent();
+
+        preg_match('#<title>(.*?)</title>#s', $html, $matches);
+
+        $this->assertNotEmpty($matches, 'title tag not found');
+        $length = strlen(html_entity_decode($matches[1]));
+        $this->assertGreaterThanOrEqual(50, $length);
+        $this->assertLessThanOrEqual(60, $length);
     }
 
     public function test_landing_page_has_canonical_and_robots_meta(): void
@@ -80,25 +98,41 @@ class SeoTest extends TestCase
         }
     }
 
-    public function test_landing_page_has_valid_json_ld_structured_data(): void
+    public function test_landing_page_has_valid_json_ld_knowledge_graph(): void
     {
         $response = $this->get('/');
         $html = $response->getContent();
 
-        $this->assertMatchesRegularExpression(
-            '#<script type="application/ld\+json">(.*?)</script>#s',
-            $html
-        );
-
         preg_match('#<script type="application/ld\+json">(.*?)</script>#s', $html, $matches);
-        $schema = json_decode($matches[1], true);
+        $this->assertNotEmpty($matches, 'JSON-LD script tag not found');
 
+        $schema = json_decode($matches[1], true);
         $this->assertNotNull($schema, 'JSON-LD payload did not decode as valid JSON');
-        $this->assertSame(['WebApplication', 'SoftwareApplication'], $schema['@type']);
-        $this->assertSame('FinanceApplication', $schema['applicationCategory']);
-        $this->assertSame('All', $schema['operatingSystem']);
-        $this->assertSame('0', $schema['offers']['price']);
-        $this->assertSame('IDR', $schema['offers']['priceCurrency']);
+        $this->assertArrayHasKey('@graph', $schema, 'schema must be a @graph, not a flat isolated node');
+        $this->assertCount(3, $schema['@graph']);
+
+        $nodesByType = collect($schema['@graph'])->keyBy(function ($node) {
+            return is_array($node['@type']) ? implode('+', $node['@type']) : $node['@type'];
+        });
+
+        $org = $nodesByType->get('Organization');
+        $webApp = $nodesByType->get('WebApplication+SoftwareApplication');
+        $website = $nodesByType->get('WebSite');
+
+        $this->assertNotNull($org, 'Organization node missing from @graph');
+        $this->assertNotNull($webApp, 'WebApplication+SoftwareApplication node missing from @graph');
+        $this->assertNotNull($website, 'WebSite node missing from @graph');
+
+        // Entities must be @id-linked, not duplicated inline — that's
+        // what lets Google's graph parser merge them into one persistent
+        // entity instead of a disposable page-scoped annotation.
+        $this->assertSame($org['@id'], $webApp['publisher']['@id']);
+        $this->assertSame($org['@id'], $website['publisher']['@id']);
+
+        $this->assertSame('FinanceApplication', $webApp['applicationCategory']);
+        $this->assertSame('All', $webApp['operatingSystem']);
+        $this->assertSame('0', $webApp['offers']['price']);
+        $this->assertSame('IDR', $webApp['offers']['priceCurrency']);
     }
 
     public function test_landing_page_has_zero_livewire_hydration_markers(): void
@@ -136,6 +170,33 @@ class SeoTest extends TestCase
         $this->assertNotEmpty((string) $xml->url[0]->lastmod);
     }
 
+    public function test_sitemap_lastmod_is_w3c_datetime_and_stable_across_requests(): void
+    {
+        // lastmod must reflect actual content modification time, not
+        // request time — otherwise it's indistinguishable from noise and
+        // Googlebot has no real freshness signal to act on.
+        $first = simplexml_load_string($this->get('/sitemap.xml')->getContent());
+        $second = simplexml_load_string($this->get('/sitemap.xml')->getContent());
+
+        $lastmod = (string) $first->url[0]->lastmod;
+        $this->assertMatchesRegularExpression(
+            '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/',
+            $lastmod
+        );
+        $this->assertSame($lastmod, (string) $second->url[0]->lastmod);
+    }
+
+    public function test_sitemap_sends_cache_control_and_etag(): void
+    {
+        $response = $this->get('/sitemap.xml');
+
+        $response->assertOk();
+        $response->assertHeader('Cache-Control');
+        $this->assertStringContainsString('max-age=3600', $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('public', $response->headers->get('Cache-Control'));
+        $this->assertNotEmpty($response->headers->get('ETag'));
+    }
+
     // --- Robots ---
 
     public function test_robots_txt_is_accessible(): void
@@ -167,5 +228,16 @@ class SeoTest extends TestCase
         $body = $response->getContent();
 
         $this->assertStringContainsString('Sitemap: '.route('sitemap'), $body);
+    }
+
+    public function test_robots_txt_sends_cache_control_and_etag(): void
+    {
+        $response = $this->get('/robots.txt');
+
+        $response->assertOk();
+        $response->assertHeader('Cache-Control');
+        $this->assertStringContainsString('max-age=3600', $response->headers->get('Cache-Control'));
+        $this->assertStringContainsString('public', $response->headers->get('Cache-Control'));
+        $this->assertNotEmpty($response->headers->get('ETag'));
     }
 }
