@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\ShiftSession;
+use App\Services\WalletReconciliationService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
@@ -56,7 +57,7 @@ class ShiftTracker extends Component
         $this->loadActiveShift();
     }
 
-    public function logTrip(): void
+    public function logTrip(WalletReconciliationService $wallet): void
     {
         if (! $this->activeShift) {
             return;
@@ -70,7 +71,7 @@ class ShiftTracker extends Component
             'points_earned' => ['nullable', 'integer', 'min:0'],
         ]);
 
-        $this->activeShift->tripLogs()->create([
+        $trip = $this->activeShift->tripLogs()->create([
             'order_id' => $validated['order_id'] ?: null,
             'fare_amount' => $validated['fare_amount'],
             'tip_cash' => $validated['tip_cash'] ?: 0,
@@ -78,8 +79,11 @@ class ShiftTracker extends Component
             'points_earned' => $validated['points_earned'] ?: 0,
         ]);
 
+        $wallet->recordTripIncome($trip);
+
         $this->reset(['order_id', 'fare_amount', 'tip_cash', 'tip_app', 'points_earned']);
         $this->loadActiveShift();
+        $this->dispatch('wallet-updated');
     }
 
     public function endShift(): void
