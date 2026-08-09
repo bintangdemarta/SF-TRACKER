@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\ShiftSession;
+use App\Services\FinancialMetricsService;
 use App\Services\WalletReconciliationService;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -13,13 +14,18 @@ class ShiftTracker extends Component
 
     // Start shift form
     public $start_odometer = '';
+
     public $target_income = '';
 
     // Trip quick-log form
     public $order_id = '';
+
     public $fare_amount = '';
+
     public $tip_cash = '';
+
     public $tip_app = '';
+
     public $points_earned = '';
 
     // End shift form
@@ -55,6 +61,7 @@ class ShiftTracker extends Component
 
         $this->reset(['start_odometer', 'target_income']);
         $this->loadActiveShift();
+        $this->dispatch('shift-updated');
     }
 
     public function logTrip(WalletReconciliationService $wallet): void
@@ -106,6 +113,7 @@ class ShiftTracker extends Component
 
         $this->reset(['end_odometer']);
         $this->loadActiveShift();
+        $this->dispatch('shift-updated');
     }
 
     public function getTripsProperty()
@@ -117,7 +125,9 @@ class ShiftTracker extends Component
 
     public function getGrossRevenueProperty(): int
     {
-        return $this->trips->sum(fn ($trip) => $trip->totalIncome());
+        return $this->activeShift
+            ? app(FinancialMetricsService::class)->grossRevenue($this->activeShift)
+            : 0;
     }
 
     public function getTripCountProperty(): int
