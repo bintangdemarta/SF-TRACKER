@@ -1,10 +1,24 @@
 <div class="max-w-xl mx-auto space-y-4">
     @if (! $activeShift)
-        {{-- START SHIFT --}}
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Mulai Shift</h3>
+        {{-- MULAI SHIFT — bottom sheet --}}
+        <div x-show="$store.sheet.isOpen('shift')" x-cloak
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="translate-y-full opacity-0"
+            x-transition:enter-end="translate-y-0 opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="translate-y-0 opacity-100"
+            x-transition:leave-end="translate-y-full opacity-0"
+            x-on:shift-updated.window="$store.sheet.close()"
+            x-on:keydown.escape.window="$store.sheet.close()"
+            class="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto pb-[calc(1rem+env(safe-area-inset-bottom))]"
+            role="dialog" aria-modal="true" aria-labelledby="shift-sheet-title">
+            <div class="sticky top-0 bg-white flex items-center justify-between px-6 pt-4 pb-2 border-b border-gray-100">
+                <h3 id="shift-sheet-title" class="text-lg font-semibold text-gray-900">Mulai Shift</h3>
+                <button type="button" x-on:click="$store.sheet.close()" aria-label="Tutup"
+                    class="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-800 active:scale-90 transition">✕</button>
+            </div>
 
-            <form wire:submit="startShift" class="space-y-4">
+            <form wire:submit="startShift" class="space-y-4 px-6 py-4">
                 <div>
                     <label for="start_odometer" class="block text-sm font-medium text-gray-800 mb-1">Odometer Awal (KM)</label>
                     <input id="start_odometer" type="number" inputmode="numeric" autocomplete="off"
@@ -36,8 +50,12 @@
                 </button>
             </form>
         </div>
+
+        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 text-center">
+            <p class="text-gray-500 text-sm">Belum ada shift berjalan. Ketuk <strong>Mulai Shift</strong> di bar bawah untuk memulai.</p>
+        </div>
     @else
-        {{-- ACTIVE SHIFT SUMMARY --}}
+        {{-- ACTIVE SHIFT SUMMARY (read-only, tetap di alur scroll) --}}
         <div class="bg-indigo-800 text-white overflow-hidden shadow-sm rounded-lg p-6" aria-live="polite" aria-atomic="true">
             <div class="flex justify-between items-start">
                 <div>
@@ -62,11 +80,42 @@
             @endif
         </div>
 
-        {{-- TRIP QUICK-LOGGER --}}
+        {{-- RECENT TRIPS (read-only) --}}
         <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Catat Trip</h3>
+            <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Trip Terbaru</h3>
+            @if ($this->trips->isEmpty())
+                <p class="text-gray-500 text-sm py-2">Belum ada trip tercatat di shift ini. Ketuk <strong>Trip</strong> di bar bawah.</p>
+            @else
+                <ul class="divide-y divide-gray-100">
+                    @foreach ($this->trips->take(5) as $trip)
+                        <li class="py-2 flex justify-between text-sm">
+                            <span class="text-gray-700">{{ $trip->created_at->format('H:i') }} @if($trip->order_id) · {{ $trip->order_id }} @endif</span>
+                            <span class="font-medium text-gray-900">Rp{{ number_format($trip->totalIncome(), 0, ',', '.') }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
 
-            <form wire:submit="logTrip" class="space-y-3">
+        {{-- CATAT TRIP — bottom sheet --}}
+        <div x-show="$store.sheet.isOpen('trip')" x-cloak
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="translate-y-full opacity-0"
+            x-transition:enter-end="translate-y-0 opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="translate-y-0 opacity-100"
+            x-transition:leave-end="translate-y-full opacity-0"
+            x-on:wallet-updated.window="$store.sheet.close()"
+            x-on:keydown.escape.window="$store.sheet.close()"
+            class="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto pb-[calc(1rem+env(safe-area-inset-bottom))]"
+            role="dialog" aria-modal="true" aria-labelledby="trip-sheet-title">
+            <div class="sticky top-0 bg-white flex items-center justify-between px-6 pt-4 pb-2 border-b border-gray-100">
+                <h3 id="trip-sheet-title" class="text-lg font-semibold text-gray-900">Catat Trip</h3>
+                <button type="button" x-on:click="$store.sheet.close()" aria-label="Tutup"
+                    class="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-800 active:scale-90 transition">✕</button>
+            </div>
+
+            <form wire:submit="logTrip" class="space-y-3 px-6 py-4">
                 <div>
                     <label for="fare_amount" class="block text-sm font-medium text-gray-800 mb-1">Argo / Ongkir (Rp)</label>
                     <input id="fare_amount" type="number" inputmode="numeric" autocomplete="off"
@@ -122,27 +171,25 @@
             </form>
         </div>
 
-        {{-- RECENT TRIPS --}}
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-            <h3 class="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Trip Terbaru</h3>
-            @if ($this->trips->isEmpty())
-                <p class="text-gray-500 text-sm py-2">Belum ada trip tercatat di shift ini.</p>
-            @else
-                <ul class="divide-y divide-gray-100">
-                    @foreach ($this->trips->take(5) as $trip)
-                        <li class="py-2 flex justify-between text-sm">
-                            <span class="text-gray-700">{{ $trip->created_at->format('H:i') }} @if($trip->order_id) · {{ $trip->order_id }} @endif</span>
-                            <span class="font-medium text-gray-900">Rp{{ number_format($trip->totalIncome(), 0, ',', '.') }}</span>
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
-        </div>
+        {{-- AKHIRI SHIFT — bottom sheet --}}
+        <div x-show="$store.sheet.isOpen('endshift')" x-cloak
+            x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="translate-y-full opacity-0"
+            x-transition:enter-end="translate-y-0 opacity-100"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="translate-y-0 opacity-100"
+            x-transition:leave-end="translate-y-full opacity-0"
+            x-on:shift-updated.window="$store.sheet.close()"
+            x-on:keydown.escape.window="$store.sheet.close()"
+            class="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto pb-[calc(1rem+env(safe-area-inset-bottom))]"
+            role="dialog" aria-modal="true" aria-labelledby="endshift-sheet-title">
+            <div class="sticky top-0 bg-white flex items-center justify-between px-6 pt-4 pb-2 border-b border-gray-100">
+                <h3 id="endshift-sheet-title" class="text-lg font-semibold text-gray-900">Akhiri Shift</h3>
+                <button type="button" x-on:click="$store.sheet.close()" aria-label="Tutup"
+                    class="min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-gray-800 active:scale-90 transition">✕</button>
+            </div>
 
-        {{-- END SHIFT --}}
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Akhiri Shift</h3>
-            <form wire:submit="endShift" class="space-y-4">
+            <form wire:submit="endShift" class="space-y-4 px-6 py-4">
                 <div>
                     <label for="end_odometer" class="block text-sm font-medium text-gray-800 mb-1">Odometer Akhir (KM)</label>
                     <input id="end_odometer" type="number" inputmode="numeric" autocomplete="off"

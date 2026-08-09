@@ -113,6 +113,13 @@ class ExpenseLogger extends Component
         $this->reset(['category_id', 'amount', 'odometer', 'notes', 'is_reimbursable']);
         $this->payment_source = 'cash';
         $this->dispatch('wallet-updated');
+
+        // Only auto-close the sheet when there's nothing the driver needs to
+        // read (e.g. the cash-safety warning) — otherwise it'd vanish before
+        // they see it.
+        if ($this->warningMessage === null) {
+            $this->dispatch('expense-logged-clean');
+        }
     }
 
     public function render()

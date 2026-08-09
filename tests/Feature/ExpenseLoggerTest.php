@@ -78,6 +78,34 @@ class ExpenseLoggerTest extends TestCase
             ->assertSet('warningMessage', fn ($message) => str_contains($message, 'melebihi kas fisik'));
     }
 
+    public function test_expense_without_warning_dispatches_sheet_close_event(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test(ExpenseLogger::class)
+            ->set('category_id', $this->parkir->id)
+            ->set('amount', 5000)
+            ->set('payment_source', 'digital_balance')
+            ->call('logExpense')
+            ->assertDispatched('expense-logged-clean')
+            ->assertDispatched('wallet-updated');
+    }
+
+    public function test_expense_with_warning_does_not_dispatch_sheet_close_event(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test(ExpenseLogger::class)
+            ->set('category_id', $this->bbm->id)
+            ->set('amount', 20000)
+            ->set('payment_source', 'cash')
+            ->call('logExpense')
+            ->assertNotDispatched('expense-logged-clean')
+            ->assertDispatched('wallet-updated');
+    }
+
     public function test_bbm_category_reveals_odometer_field(): void
     {
         $user = User::factory()->create();
