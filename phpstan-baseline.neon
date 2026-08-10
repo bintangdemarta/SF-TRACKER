@@ -1,0 +1,79 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Parameter \#1 \$user of class Illuminate\\Auth\\Events\\Verified constructor expects Illuminate\\Contracts\\Auth\\MustVerifyEmail, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Auth/VerifyEmailController.php
+
+		-
+			message: '#^Access to an undefined property App\\Livewire\\ExpenseLogger\:\:\$activeShift\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/ExpenseLogger.php
+
+		-
+			message: '#^Access to an undefined property App\\Livewire\\ExpenseLogger\:\:\$selectedCategory\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/ExpenseLogger.php
+
+		-
+			message: '#^Access to an undefined property App\\Livewire\\ExpenseLogger\:\:\$showOdometerField\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Livewire/ExpenseLogger.php
+
+		-
+			message: '#^Method App\\Livewire\\ExpenseLogger\:\:getSelectedCategoryProperty\(\) should return App\\Models\\ExpenseCategory\|null but returns Illuminate\\Database\\Eloquent\\Model\|null\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Livewire/ExpenseLogger.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>start_odometer" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Livewire/ExpenseLogger.php
+
+		-
+			message: '#^Access to an undefined property App\\Livewire\\FinancialDashboard\:\:\$activeShift\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/FinancialDashboard.php
+
+		-
+			message: '#^Access to an undefined property App\\Livewire\\ShiftTracker\:\:\$trips\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/ShiftTracker.php
+
+		-
+			message: '#^Parameter \#1 \$trip of method App\\Services\\WalletReconciliationService\:\:recordTripIncome\(\) expects App\\Models\\TripLog, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Livewire/ShiftTracker.php
+
+		-
+			message: '#^Cannot call method diffInMinutes\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/FinancialMetricsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/WalletReconciliationService.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\WalletReconciliationService\:\:cashBalance\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/WalletReconciliationService.php
+
+		-
+			message: '#^Parameter \#1 \$user of method App\\Services\\WalletReconciliationService\:\:post\(\) expects App\\Models\\User, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/WalletReconciliationService.php
