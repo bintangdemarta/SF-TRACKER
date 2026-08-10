@@ -32,18 +32,23 @@ Status: `done` | `in-progress` | `pending` | `blocked`
 **Belum masuk scope:** FR-4.2 Historical Reporting (filter rentang tanggal + export CSV/Excel) — belum dikerjakan, masih di PRD tapi belum ada commit terkait.
 
 ## Phase 5: Mobile Hardening & PWA
-**Status:** in-progress
+**Status:** in-progress (fungsional terverifikasi, sisa polish)
 - ✅ PWA Manifest — `vite-plugin-pwa` dipasang, web app manifest (`manifest.webmanifest`) ter-generate dari `vite.config.js`, icon 192/512px, `start_url` ke `/dashboard`, `display: standalone`.
 - ✅ Service Worker — `resources/js/sw.js` (strategi `injectManifest`/Workbox), precache asset build + offline shell, scope `/` (di-pair dengan header `Service-Worker-Allowed` di `public/.htaccess` dan `docker/nginx/app.conf` karena file fisiknya ada di `/build/`).
 - ✅ Offline fallback — `public/offline.html`.
-- Belum: registrasi SW belum diverifikasi di browser nyata (buka app, cek `chrome://inspect`/Application tab, test airplane mode), belum ada Lighthouse PWA audit.
-- Testing performa di perangkat mobile entry-level — belum dilakukan
+- ✅ **Diverifikasi jalan beneran (2026-08-10, otomatis via Playwright ke `https://sf-tracker.test`):**
+  - Root cause ketemu kenapa sebelumnya "gak bisa diverifikasi": SW API butuh *secure context* (HTTPS atau `localhost` literal) — dev server jalan di HTTP biasa lewat vhost custom (`sf-tracker.test`), jadi `navigator.serviceWorker` gak ke-expose sama sekali (`isSecureContext: false`). Fix: HTTPS lokal via `mkcert` (root CA + cert utk `sf-tracker.test`/`localhost`/`127.0.0.1`, vhost `:443` baru di `httpd-vhosts.conf`, `APP_URL` diupdate ke `https://` di `.env` lokal — gak kena commit).
+  - Setelah HTTPS aktif: SW register + activate normal, precache 8 entries kepasang bersih, dashboard yang udah pernah dibuka tetap full-render pas offline (termasuk banner offline bawaan app).
+  - **Bug nyata ketemu & di-fix:** `setCatchHandler` di `sw.js` manggil `createHandlerBoundToURL('/offline.html')()` tanpa argumen — Workbox butuh `options` (event/request/url) di-forward ke handler itu, kalau kosong internalnya crash (`TypeError: Cannot set properties of undefined`). Efeknya: navigasi offline ke route yang belum pernah di-cache (test pakai `/profile`) gagal total (`ERR_FAILED`, blank page) alih-alih nampilin `offline.html`. Fix: `createHandlerBoundToURL('/offline.html')(options)` — diverifikasi ulang, sekarang fallback page tampil benar.
+- ⚠️ **Implikasi Phase 10:** TLS di production sekarang jadi *hard requirement* buat fitur PWA ini berfungsi (bukan cuma governance nice-to-have) — lihat catatan di Phase 10 di bawah.
+- Belum: Lighthouse PWA audit formal (sedang dicoba), testing performa di perangkat mobile entry-level fisik.
 
 ## Phase 6: Infra Stability (di luar PRD, muncul dari insiden lapangan)
 **Status:** done, dengan catatan
 - Migrasi MySQL dari XAMPP native ke Docker container (`mysqld.exe` sering crash pas idle/sleep)
 - Docker Desktop AutoStart di Windows login diaktifkan
 - ⚠️ Belum tervalidasi 100%: `restart: unless-stopped` sempat gak auto-hidup sendiri pas Docker Desktop restart (butuh start manual sekali). Perlu diamati di kejadian nyata berikutnya — kalau berulang, pasang scheduled task `docker start` beberapa menit setelah boot.
+- **Kejadian berulang (2026-08-10):** persis skenario di atas — Docker Desktop jalan tapi container `sf-tracker-mysql` mati sendiri, `docker ps` kosong. Start manual (`docker compose up -d`) langsung sehat lagi. Ini kejadian ke-2 yang tercatat — kalau kejadian lagi ke depannya, prioritaskan scheduled task auto-start di atas.
 
 ## Phase 7: Public Landing Page & Technical SEO (ekstensi non-PRD)
 **Status:** done
@@ -80,7 +85,7 @@ Status: `done` | `in-progress` | `pending` | `blocked`
   1. Server staging & VPS production belum diprovisioning — begitu ada, isi `.env.staging`/`.env.production` di host dari template, set GitHub Secrets (`STAGING_SSH_HOST/USER/KEY/PORT/DEPLOY_PATH`, sama untuk `PRODUCTION_*`), lalu set repo variable `*_DEPLOY_ENABLED=true` buat aktifin job deploy-nya.
   2. GHCR package (`ghcr.io/bintangdemarta/sf-tracker`) defaultnya **private** — perlu diubah manual ke Public di GitHub package settings (agar server target bisa `docker pull` tanpa login registry), atau kasih tau saya kalau mau tetap private (nanti perlu tambahan step `docker login` di server pakai PAT).
   3. Environment `production` di GitHub perlu di-set manual (Settings → Environments → production → Required reviewers) buat dapetin gerbang **manual approval** sebelum deploy ke prod, sesuai governance spec — ini gak bisa saya lakukan lewat tools yang saya punya (butuh akses admin API repo).
-  4. TLS/reverse proxy buat production VPS belum diputuskan (domain final juga belum) — dicatat sebagai backlog, jangan dibangun buta sebelum ada domain/DNS.
+  4. TLS/reverse proxy buat production VPS belum diputuskan (domain final juga belum) — dicatat sebagai backlog, jangan dibangun buta sebelum ada domain/DNS. **⬆️ Prioritas naik (2026-08-10):** terverifikasi bahwa fitur PWA (Phase 5) butuh secure context (HTTPS) buat berfungsi sama sekali — kalau production nanti jalan tanpa TLS, seluruh offline-resilience yang udah dibangun gak akan jalan di sana. Rekomendasi: Caddy atau Nginx + Let's Encrypt (automated TLS) begitu domain final ada.
   5. Queue worker & scheduler container **sengaja belum ditambahin** — app belum punya queued job atau scheduled task sama sekali (`grep` kosong), jadi container tambahan cuma nganggur. Gampang ditambah nanti: image yang sama, tinggal ganti `command:` jadi `php artisan queue:work` / `schedule:work`.
 
 ---

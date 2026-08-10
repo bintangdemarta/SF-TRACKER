@@ -25,9 +25,12 @@ registerRoute(
 
 // Last resort ONLY: fires when no route above produced a response at all
 // (genuinely offline + nothing cached for that URL yet) — not on every navigation.
-setCatchHandler(async ({ request }) => {
-    if (request.mode === 'navigate') {
-        return createHandlerBoundToURL('/offline.html')();
+setCatchHandler(async (options) => {
+    if (options.request.mode === 'navigate') {
+        // createHandlerBoundToURL's returned handler expects the full
+        // {event, request, url, params} options object Workbox's router
+        // normally supplies — calling it with no args throws internally.
+        return createHandlerBoundToURL('/offline.html')(options);
     }
 
     return Response.error();

@@ -4,6 +4,18 @@ Catatan perkembangan proyek, urutan **terbaru di atas**. Diisi tiap ada progres 
 
 ---
 
+### 2026-08-10 — PWA: verifikasi offline beneran jalan + bug fix (Phase 5 closeout attempt)
+- **Blocker ketemu:** dev server `sf-tracker.test` jalan di HTTP biasa (custom hostname via hosts file, bukan `localhost` literal) — browser gak nganggap ini *secure context*, jadi `navigator.serviceWorker` gak ke-expose sama sekali. Ini akar masalah kenapa PWA "belum diverifikasi" dari kickoff sebelumnya — bukan cuma belum sempat dicek, tapi memang gak bisa dicek sampai ini di-fix.
+- **Fix:** install `mkcert` (portable binary, gak lewat Chocolatey karena gak ada akses admin shell) → `mkcert -install` (root CA lokal, gak perlu admin prompt) → generate cert utk `sf-tracker.test`/`localhost`/`127.0.0.1` → tambah `<VirtualHost *:443>` baru di `httpd-vhosts.conf` dengan `SSLEngine on` + cert tsb → `httpd -t` (syntax check) → restart Apache → update `APP_URL` ke `https://` di `.env` lokal (gak kena commit) + `php artisan config:clear`.
+- **Verifikasi otomatis** via Playwright (`​.tools/screenshot/verify-pwa.js` di workspace root, bukan di repo project) — login, cek registrasi SW, simulasi offline (`context.setOffline(true)`), cek konten yang di-render:
+  - `isSecureContext: true`, SW `activeState: "activated"`, `controllerNow: true` — registrasi sukses.
+  - Reload dashboard (route yang udah pernah dibuka) pas offline → full render dari cache, termasuk banner offline bawaan app. ✅
+  - **Bug nyata ketemu:** navigasi offline ke route yang belum pernah di-cache (`/profile`) gagal total (`ERR_FAILED`, blank page) — seharusnya nampilin `offline.html`. Root cause (di-trace lewat temporary debug logging di SW, di-cabut lagi setelah ketemu): `setCatchHandler` di `resources/js/sw.js` manggil `createHandlerBoundToURL('/offline.html')()` tanpa argumen `options`, padahal Workbox butuh itu di-forward (event/request/url) — internalnya crash `TypeError: Cannot set properties of undefined`.
+  - **Fix diterapkan:** `createHandlerBoundToURL('/offline.html')(options)` — options diteruskan dari parameter `setCatchHandler`. Rebuild (`npm run build`), retest: fallback page sekarang tampil benar buat route manapun yang belum ke-cache.
+- **Efek samping ketemu di jalan:** container Docker `sf-tracker-mysql` (DB asli app, port `33061`) ternyata mati padahal Docker Desktop jalan — persis skenario "belum tervalidasi 100%" yang dicatat di Phase 6. Start manual (`docker compose up -d`), sehat lagi. Kejadian ke-2, dicatat di `devplan.md` Phase 6.
+- **Implikasi buat Phase 10:** TLS/reverse-proxy production sekarang jadi hard requirement, bukan cuma governance checklist — kalau production jalan tanpa HTTPS, fitur PWA yang baru diverifikasi ini gak akan berfungsi di sana.
+- Belum: Lighthouse PWA audit formal, test di device fisik entry-level.
+
 ### 2026-08-10 — PWA: manifest + service worker (Phase 5 kickoff)
 - `vite-plugin-pwa` (strategi `injectManifest` + Workbox) dipasang: `resources/js/sw.js` precache asset build (`assets/*.{js,css}`) plus offline shell (`offline.html`, icon 192/512px).
 - Web app manifest digenerate dari config di `vite.config.js` — nama/short_name/theme_color SF-Tracker, `display: standalone`, `start_url: /dashboard`.
