@@ -21,16 +21,52 @@ class SitemapController extends Controller
      */
     public function __invoke(): Response
     {
-        $landingLastmod = Carbon::createFromTimestamp(
-            filemtime(resource_path('views/landing.blade.php'))
+        $lastmodOf = fn (string $view) => Carbon::createFromTimestamp(
+            filemtime(resource_path("views/{$view}.blade.php"))
         )->toAtomString();
 
         $urls = [
             [
                 'loc' => route('landing'),
-                'lastmod' => $landingLastmod,
+                'lastmod' => $lastmodOf('landing'),
                 'changefreq' => 'weekly',
                 'priority' => '1.0',
+            ],
+            [
+                'loc' => route('guides.pillar'),
+                'lastmod' => $lastmodOf('guides/pillar'),
+                'changefreq' => 'weekly',
+                'priority' => '0.9',
+            ],
+            [
+                'loc' => route('guides.net-profit'),
+                'lastmod' => $lastmodOf('guides/net-profit'),
+                'changefreq' => 'weekly',
+                'priority' => '0.8',
+            ],
+            [
+                'loc' => route('guides.cost-per-km'),
+                'lastmod' => $lastmodOf('guides/cost-per-km'),
+                'changefreq' => 'weekly',
+                'priority' => '0.8',
+            ],
+            [
+                'loc' => route('guides.poin-insentif'),
+                'lastmod' => $lastmodOf('guides/poin-insentif'),
+                'changefreq' => 'weekly',
+                'priority' => '0.8',
+            ],
+            [
+                'loc' => route('guides.dual-wallet'),
+                'lastmod' => $lastmodOf('guides/dual-wallet'),
+                'changefreq' => 'weekly',
+                'priority' => '0.8',
+            ],
+            [
+                'loc' => route('guides.target-harian'),
+                'lastmod' => $lastmodOf('guides/target-harian'),
+                'changefreq' => 'weekly',
+                'priority' => '0.8',
             ],
         ];
 

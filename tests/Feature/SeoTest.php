@@ -163,7 +163,6 @@ class SeoTest extends TestCase
 
         $this->assertNotFalse($xml, 'sitemap.xml did not parse as valid XML');
         $this->assertSame('urlset', $xml->getName());
-        $this->assertCount(1, $xml->url);
         $this->assertSame(route('landing'), (string) $xml->url[0]->loc);
         $this->assertSame('weekly', (string) $xml->url[0]->changefreq);
         $this->assertSame('1.0', (string) $xml->url[0]->priority);

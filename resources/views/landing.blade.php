@@ -27,10 +27,15 @@
             <div class="max-w-5xl mx-auto px-4 sm:px-6 py-16 sm:py-24 text-center">
                 <h1 class="text-3xl sm:text-5xl font-extrabold leading-tight tracking-tight">
                     Hitung Bersih, Jangan Tertipu Saldo
+                    <span class="block text-2xl sm:text-3xl font-semibold text-slate-300 mt-2">Aplikasi Keuangan Driver ShopeeFood</span>
                 </h1>
                 <p class="mt-5 text-lg sm:text-xl text-slate-300 max-w-2xl mx-auto">
                     Saldo muter tinggi bukan berarti untung. {{ config('app.name') }} pisahin kas tunai & saldo digital
                     secara otomatis, dan kasih tau profit bersih riil kamu — bukan cuma angka yang keliatan ramai.
+                </p>
+                <p class="mt-3 text-sm sm:text-base text-slate-400 max-w-2xl mx-auto">
+                    Poin/Berlian insentif, dana talangan resto, sampai rekonsiliasi tunai vs saldo ShopeePay —
+                    semua kepisah rapi, gak numpuk jadi satu angka yang menyesatkan.
                 </p>
                 <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
                     <a href="{{ route('register') }}"
@@ -96,6 +101,10 @@
     <footer class="border-t border-slate-200">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 py-8 text-center text-sm text-slate-500">
             &copy; {{ now()->year }} {{ config('app.name') }}. Dibuat buat mitra pengemudi ShopeeFood.
+            <br>
+            <a href="{{ route('guides.pillar') }}" class="text-emerald-700 hover:underline font-medium">
+                Panduan Lengkap Driver ShopeeFood
+            </a>
         </div>
     </footer>
 
