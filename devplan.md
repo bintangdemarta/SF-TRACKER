@@ -32,9 +32,11 @@ Status: `done` | `in-progress` | `pending` | `blocked`
 **Belum masuk scope:** FR-4.2 Historical Reporting (filter rentang tanggal + export CSV/Excel) — belum dikerjakan, masih di PRD tapi belum ada commit terkait.
 
 ## Phase 5: Mobile Hardening & PWA
-**Status:** pending
-- PWA Manifest — belum ada (`public/build/manifest.json` yang ada sekarang cuma Vite asset manifest, bukan web app manifest)
-- Service Worker — belum ada
+**Status:** in-progress
+- ✅ PWA Manifest — `vite-plugin-pwa` dipasang, web app manifest (`manifest.webmanifest`) ter-generate dari `vite.config.js`, icon 192/512px, `start_url` ke `/dashboard`, `display: standalone`.
+- ✅ Service Worker — `resources/js/sw.js` (strategi `injectManifest`/Workbox), precache asset build + offline shell, scope `/` (di-pair dengan header `Service-Worker-Allowed` di `public/.htaccess` dan `docker/nginx/app.conf` karena file fisiknya ada di `/build/`).
+- ✅ Offline fallback — `public/offline.html`.
+- Belum: registrasi SW belum diverifikasi di browser nyata (buka app, cek `chrome://inspect`/Application tab, test airplane mode), belum ada Lighthouse PWA audit.
 - Testing performa di perangkat mobile entry-level — belum dilakukan
 
 ## Phase 6: Infra Stability (di luar PRD, muncul dari insiden lapangan)
@@ -61,7 +63,7 @@ Status: `done` | `in-progress` | `pending` | `blocked`
 - Screenshot tool (Playwright + Chromium) di `.tools/screenshot` — dipakai untuk cross-check visual UI tanpa Bos harus screenshot manual
 
 ## Phase 10: Multi-Environment & Release Governance
-**Status:** in-progress
+**Status:** done — dideklarasikan selesai oleh Bos (2026-08-10). Eksekusi deploy nyata (provisioning server, secrets, aktivasi gate) jadi action item terpisah milik Bos, gak lagi nge-block fase berikutnya.
 - Standar governance (environment taxonomy, branch-to-environment mapping, pipeline gating) diadopsi dari spec Bos.
 - ✅ Branch strategy: `develop` + `staging` dibuat dari `main`, dipush ke `origin` (mapping: `develop`→Dev, `staging`/`release/*`→Staging, `main`/`tags/v*`→Production).
 - ✅ CI pipeline dasar: `.github/workflows/ci.yml` — job `lint` (Pint + Larastan/PHPStan level 5) dan `test` (Vite build + PHPUnit), trigger on push/PR ke `main`/`develop`/`staging`.

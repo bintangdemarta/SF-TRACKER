@@ -4,6 +4,14 @@ Catatan perkembangan proyek, urutan **terbaru di atas**. Diisi tiap ada progres 
 
 ---
 
+### 2026-08-10 — PWA: manifest + service worker (Phase 5 kickoff)
+- `vite-plugin-pwa` (strategi `injectManifest` + Workbox) dipasang: `resources/js/sw.js` precache asset build (`assets/*.{js,css}`) plus offline shell (`offline.html`, icon 192/512px).
+- Web app manifest digenerate dari config di `vite.config.js` — nama/short_name/theme_color SF-Tracker, `display: standalone`, `start_url: /dashboard`.
+- Service worker fisiknya ada di `/build/sw.js` (ikut `outDir` Vite) tapi butuh scope `/` biar bisa kontrol seluruh app, bukan cuma folder `/build/` — di-fix dengan header `Service-Worker-Allowed: /` di `public/.htaccess` (Apache/XAMPP lokal) dan `docker/nginx/app.conf` (nginx di image Docker deploy).
+- Registrasi SW dipasang di `resources/js/app.js` via `virtual:pwa-register` (`registerSW({ immediate: true })`).
+- Build lokal (`npm run build`) sukses — `public/build/sw.js`, `manifest.webmanifest`, `manifest.json` ter-generate bersih.
+- **Gap terbuka:** belum diverifikasi jalan beneran di browser (registrasi SW, offline mode, Lighthouse PWA audit) — lihat `devplan.md` Phase 5.
+
 ### 2026-08-10 — Docker deploy architecture (staging + production)
 - Target hosting dari Bos: Staging = self-hosted Docker (tunnel/domain internal), Production = VPS Cloud terpisah (Hostinger, tier belum final).
 - `Dockerfile` multi-stage: composer deps (cached by lock file) → Vite asset build → runtime `php:8.2-fpm-alpine` dengan nginx+php-fpm dijalanin bareng via supervisord dalam 1 image. `docker-compose.deploy.yml` satu file dipakai staging & production (env-file beda per host) — prinsip parity.

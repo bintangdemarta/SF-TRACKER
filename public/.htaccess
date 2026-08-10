@@ -1,3 +1,11 @@
+<IfModule mod_headers.c>
+    # Let the service worker built into /build/ control the whole site,
+    # not just its own /build/ directory (default SW scope rule).
+    <FilesMatch "^sw\.js$">
+        Header set Service-Worker-Allowed "/"
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
