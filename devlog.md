@@ -4,6 +4,15 @@ Catatan perkembangan proyek, urutan **terbaru di atas**. Diisi tiap ada progres 
 
 ---
 
+### 2026-08-10 — Docker deploy architecture (staging + production)
+- Target hosting dari Bos: Staging = self-hosted Docker (tunnel/domain internal), Production = VPS Cloud terpisah (Hostinger, tier belum final).
+- `Dockerfile` multi-stage: composer deps (cached by lock file) → Vite asset build → runtime `php:8.2-fpm-alpine` dengan nginx+php-fpm dijalanin bareng via supervisord dalam 1 image. `docker-compose.deploy.yml` satu file dipakai staging & production (env-file beda per host) — prinsip parity.
+- **Bug nyata ketemu & fix pas testing build lokal:** `apk del icu-dev oniguruma-dev` di runtime stage ikut narik turun `icu-libs` (dependency runtime, bukan cuma header dev), bikin ekstensi `intl` gagal load. Fix: pakai `apk add --virtual .build-deps` supaya cuma paket build-time yang kehapus, runtime lib (`icu-libs`, `oniguruma`) tetap ada. Diverifikasi ulang: warning hilang.
+- **Diuji end-to-end lokal** (bukan cuma nulis YAML terus dipush): `docker build` sukses, `docker compose -f docker-compose.deploy.yml up -d` (app+mysql), `php artisan migrate --force` jalan bersih (10 migration), `/up` dan `/` sama-sama 200, container healthcheck `healthy`. Environment test langsung dibongkar (`down -v`) biar gak numpuk di Docker Desktop lokal Bos.
+- Koreksi audit sebelumnya: healthcheck `/up` ternyata **sudah ada** dari default Laravel 11 (`bootstrap/app.php`), bukan "belum ada" seperti dicatat pas audit governance awal — kesalahan grep (cuma cek `routes/web.php`).
+- `ci.yml` ditambah 3 job baru: `build-and-push` (build image, push ke GHCR dengan tag immutable `<branch>-<sha>` + moving tag `<branch>`), `deploy-staging`, `deploy-production` (SSH ke host target via `appleboy/ssh-action`, `docker compose pull && up -d`, migrate, cek `/up`).
+- Deploy job **sengaja di-gate** di belakang repo variable `STAGING_DEPLOY_ENABLED`/`PRODUCTION_DEPLOY_ENABLED` (default gak ada = off) — supaya CI gak gagal berisik tiap push sebelum server & secrets-nya beneran siap. Lihat `devplan.md` Phase 10 buat checklist lengkap yang masih butuh input Bos (provisioning server, GitHub Secrets, GHCR visibility, environment protection rule buat manual-approval production).
+
 ### 2026-08-10 — Branch strategy + CI/CD pipeline (Phase 10 kickoff)
 - Adopsi standar governance multi-environment dari Bos: audit realitas project (solo-dev, 1 environment, 0 CI) dicatat sebagai gap di `devplan.md` Phase 10.
 - Git: `main` di-push (1 commit lokal yang ketinggalan), branch `develop` dan `staging` dibuat dari `main` dan dipush ke `origin` — fondasi buat branch-to-environment mapping (`develop`→Dev, `staging`/`release/*`→Staging, `main`/`tags/v*`→Production) sesuai spec Bos.

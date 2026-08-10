@@ -66,8 +66,20 @@ Status: `done` | `in-progress` | `pending` | `blocked`
 - ✅ Branch strategy: `develop` + `staging` dibuat dari `main`, dipush ke `origin` (mapping: `develop`→Dev, `staging`/`release/*`→Staging, `main`/`tags/v*`→Production).
 - ✅ CI pipeline dasar: `.github/workflows/ci.yml` — job `lint` (Pint + Larastan/PHPStan level 5) dan `test` (Vite build + PHPUnit), trigger on push/PR ke `main`/`develop`/`staging`.
 - ✅ Larastan dipasang, baseline (`phpstan-baseline.neon`) dibuat untuk 16 error pre-existing (lihat backlog di bawah).
-- ⏳ **Belum ada:** Preview/PR ephemeral env, auto-deploy Dev/Staging beneran (karena belum ada target hosting), Production dengan Blue/Green/Canary, DR. Semua itu butuh keputusan hosting dulu dari Bos — belum bisa dikerjakan tanpa itu.
-- ⏳ Belum ada healthcheck route (`/up` atau `/healthz`) — kandidat kerjaan kecil berikutnya, gampang ditambahin kapan saja.
+- ⚠️ **Koreksi catatan sebelumnya:** healthcheck route `/up` **sudah ada** dari default Laravel 11 (`bootstrap/app.php`, `health: '/up'`) — audit awal salah karena cuma grep `routes/web.php`, gak cek `bootstrap/app.php`. Diverifikasi ulang: `curl http://sf-tracker.test/up` → 200.
+- ✅ **Target hosting ditentukan Bos:** Staging = self-hosted Docker (diakses via domain internal/tunnel), Production = VPS Cloud terpisah (rencana Hostinger, tier belum diputuskan — VPS vs Shared, ditunda).
+- ✅ **Docker image + compose architecture dibangun & diverifikasi jalan beneran** (bukan cuma nulis YAML):
+  - `Dockerfile` multi-stage (composer deps → Vite build → runtime `php:8.2-fpm-alpine` dengan nginx+php-fpm digabung lewat supervisord dalam 1 image/container)
+  - `docker-compose.deploy.yml` — satu compose file dipakai staging & production sekaligus (env-file beda per host), prinsip staging/prod parity
+  - `.env.staging.example` / `.env.production.example` — template, real file gak pernah dicommit
+  - Diuji end-to-end lokal: `docker build` sukses (sempat ketemu & fix bug nyata — `apk del icu-dev` ikut narik turun `icu-libs` runtime, bikin ekstensi `intl` gak kebaca), container jalan via `docker compose up`, migration jalan, `/up` dan `/` sama-sama 200, container healthcheck `healthy`. Lingkungan test langsung dibongkar lagi (gak numpuk di Docker Desktop lokal).
+  - `ci.yml` diperluas: job `build-and-push` (image ke GHCR, immutable tag `<branch>-<sha>`) dan `deploy-staging`/`deploy-production` (SSH ke host target, `docker compose pull && up -d`, `migrate --force`, cek `/up`) — **sengaja di-gate di belakang repo variable `STAGING_DEPLOY_ENABLED`/`PRODUCTION_DEPLOY_ENABLED`** (bukan langsung aktif), supaya job gak gagal berisik tiap push sebelum secrets & server-nya beneran ada.
+- ⏳ **Belum bisa dikerjakan / butuh input Bos:**
+  1. Server staging & VPS production belum diprovisioning — begitu ada, isi `.env.staging`/`.env.production` di host dari template, set GitHub Secrets (`STAGING_SSH_HOST/USER/KEY/PORT/DEPLOY_PATH`, sama untuk `PRODUCTION_*`), lalu set repo variable `*_DEPLOY_ENABLED=true` buat aktifin job deploy-nya.
+  2. GHCR package (`ghcr.io/bintangdemarta/sf-tracker`) defaultnya **private** — perlu diubah manual ke Public di GitHub package settings (agar server target bisa `docker pull` tanpa login registry), atau kasih tau saya kalau mau tetap private (nanti perlu tambahan step `docker login` di server pakai PAT).
+  3. Environment `production` di GitHub perlu di-set manual (Settings → Environments → production → Required reviewers) buat dapetin gerbang **manual approval** sebelum deploy ke prod, sesuai governance spec — ini gak bisa saya lakukan lewat tools yang saya punya (butuh akses admin API repo).
+  4. TLS/reverse proxy buat production VPS belum diputuskan (domain final juga belum) — dicatat sebagai backlog, jangan dibangun buta sebelum ada domain/DNS.
+  5. Queue worker & scheduler container **sengaja belum ditambahin** — app belum punya queued job atau scheduled task sama sekali (`grep` kosong), jadi container tambahan cuma nganggur. Gampang ditambah nanti: image yang sama, tinggal ganti `command:` jadi `php artisan queue:work` / `schedule:work`.
 
 ---
 
