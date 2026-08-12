@@ -6,6 +6,7 @@ use App\Http\Controllers\Guides\NetProfitGuideController;
 use App\Http\Controllers\Guides\PillarGuideController;
 use App\Http\Controllers\Guides\PoinInsentifGuideController;
 use App\Http\Controllers\Guides\TargetHarianGuideController;
+use App\Http\Controllers\HistoricalReportExportController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\RobotsController;
 use App\Http\Controllers\SitemapController;
@@ -31,5 +32,13 @@ Route::view('dashboard', 'dashboard')
 Route::view('profile', 'profile')
     ->middleware(['auth'])
     ->name('profile');
+
+Route::view('reports', 'reports')
+    ->middleware(['auth', 'verified'])
+    ->name('reports');
+
+Route::get('reports/export', HistoricalReportExportController::class)
+    ->middleware(['auth', 'verified'])
+    ->name('reports.export');
 
 require __DIR__.'/auth.php';

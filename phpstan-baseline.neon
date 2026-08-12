@@ -43,6 +43,12 @@ parameters:
 			path: app/Livewire/FinancialDashboard.php
 
 		-
+			message: '#^Access to an undefined property App\\Livewire\\HistoricalReport\:\:\$range\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Livewire/HistoricalReport.php
+
+		-
 			message: '#^Access to an undefined property App\\Livewire\\ShiftTracker\:\:\$trips\.$#'
 			identifier: property.notFound
 			count: 1
@@ -59,6 +65,24 @@ parameters:
 			identifier: method.nonObject
 			count: 1
 			path: app/Services/FinancialMetricsService.php
+
+		-
+			message: '#^Cannot call method diffInMinutes\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 1
+			path: app/Services/HistoricalReportService.php
+
+		-
+			message: '#^Cannot call method format\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 3
+			path: app/Services/HistoricalReportService.php
+
+		-
+			message: '#^Method App\\Services\\HistoricalReportService\:\:exportRows\(\) should return Illuminate\\Support\\LazyCollection\<int, array\{id\: int, tanggal\: string, jam_mulai\: string, jam_selesai\: string, jarak_km\: float, gross_revenue\: int, operational_cost\: int, net_profit\: int, \.\.\.\}\> but returns Illuminate\\Support\\LazyCollection\<int, array\{id\: int, tanggal\: string, jam_mulai\: string, jam_selesai\: string, jarak_km\: float, gross_revenue\: int, operational_cost\: int, net_profit\: int, \.\.\.\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/HistoricalReportService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$user\.$#'

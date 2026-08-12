@@ -37,6 +37,12 @@ class PerformanceMetricsService
 
     public function __construct(protected FinancialMetricsService $financials) {}
 
+    /** @return list<string> */
+    public function directCostCategoryTypes(): array
+    {
+        return self::DIRECT_COST_CATEGORY_TYPES;
+    }
+
     public function directOperationalCost(ShiftSession $shift): int
     {
         return (int) $shift->expenses()

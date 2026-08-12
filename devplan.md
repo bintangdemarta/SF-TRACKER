@@ -29,7 +29,7 @@ Status: `done` | `in-progress` | `pending` | `blocked`
 - UI retrofit ke design-system rigor (WCAG AAA, touch target, state feedback)
 - Bottom-sheet UI untuk primary actions (thumb-zone ergonomics)
 
-**Belum masuk scope:** FR-4.2 Historical Reporting (filter rentang tanggal + export CSV/Excel) — belum dikerjakan, masih di PRD tapi belum ada commit terkait.
+- ✅ **FR-4.2 Historical Reporting (2026-08-10)** — filter periode (Harian/Mingguan/Bulanan/Custom), ringkasan agregat (Net Profit, Jarak, Efisiensi BBM, rata-rata Cost/KM — reuse `PerformanceMetricsService::summarizeForPeriod`, bukan duplikasi arithmetic), tabel riwayat shift per-baris (query correlated-subquery, bukan N+1), export CSV/Excel streaming memory-safe (`rap2hpoutre/fast-excel` + `openspout`, row-by-row lewat `LazyCollection::cursor()`). Livewire component `HistoricalReport` + route `/reports`, nav link "Riwayat". 28 test baru (unit agregasi + endpoint export CSV/XLSX + komponen), full suite 183/183 pass, Pint & Larastan bersih (4 pola baseline baru — computed-property Livewire & Carbon-cast-recognition, sama kelas debt sistemik yang udah ada, plus 1 keterbatasan PHPStan LazyCollection-invariance yang terdokumentasi resmi).
 
 ## Phase 5: Mobile Hardening & PWA
 **Status:** in-progress (fungsional terverifikasi, sisa polish)
@@ -91,8 +91,7 @@ Status: `done` | `in-progress` | `pending` | `blocked`
 ---
 
 ## Belum dikerjakan / kandidat fase berikutnya
-- FR-4.2 Historical Reporting (filter tanggal + export CSV/Excel)
-- Phase 5 PWA (manifest + service worker)
+- Phase 5 PWA: Lighthouse audit formal + test device fisik entry-level (fungsional sudah terverifikasi, lihat Phase 5)
 - Fact-check & finalisasi 6 artikel content cluster sebelum go-live publik
 - `og:image` asset 1200×630 belum ada filenya (dibutuhkan Bos upload manual, agent gak bisa generate gambar)
 - Healthcheck route `/up` untuk smoke test CI/CD
