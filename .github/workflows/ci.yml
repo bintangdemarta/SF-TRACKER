@@ -141,25 +141,28 @@ jobs:
 
   deploy-production:
     name: Deploy to Production
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, sf-tracker-production]
     needs: build-and-push
     if: github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
     environment: production
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.PRODUCTION_SSH_HOST }}
-          username: ${{ secrets.PRODUCTION_SSH_USER }}
-          key: ${{ secrets.PRODUCTION_SSH_KEY }}
-          port: ${{ secrets.PRODUCTION_SSH_PORT || 22 }}
-          script: |
-            set -e
-            cd ${{ secrets.PRODUCTION_DEPLOY_PATH }}
-            sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}|" .env.production
-            docker compose -f docker-compose.deploy.yml --env-file .env.production pull
-            docker compose -f docker-compose.deploy.yml --env-file .env.production up -d
-            docker compose -f docker-compose.deploy.yml --env-file .env.production exec -T app php artisan migrate --force
-            sleep 5
-            APP_PORT=$(grep '^APP_PORT=' .env.production | cut -d= -f2)
-            curl -sf "http://127.0.0.1:${APP_PORT:-8080}/up"
+      - uses: actions/checkout@v4
+
+      - name: Prepare deployment files
+        run: |
+          set -euo pipefail
+          mkdir -p "${{ vars.PRODUCTION_DEPLOY_PATH || '/home/sftracker/sf-tracker-production' }}"
+          cp docker-compose.deploy.yml "${{ vars.PRODUCTION_DEPLOY_PATH || '/home/sftracker/sf-tracker-production' }}/docker-compose.deploy.yml"
+
+      - name: Deploy local Docker stack
+        working-directory: ${{ vars.PRODUCTION_DEPLOY_PATH || '/home/sftracker/sf-tracker-production' }}
+        run: |
+          set -euo pipefail
+          test -f .env.production
+          sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=${{ needs.build-and-push.outputs.image_tag }}|" .env.production
+          docker compose -f docker-compose.deploy.yml --env-file .env.production pull
+          docker compose -f docker-compose.deploy.yml --env-file .env.production up -d
+          docker compose -f docker-compose.deploy.yml --env-file .env.production exec -T app php artisan migrate --force
+          docker compose -f docker-compose.deploy.yml --env-file .env.production exec -T app php artisan db:seed --class=ExpenseCategorySeeder --force
+          APP_PORT=$(grep '^APP_PORT=' .env.production | cut -d= -f2)
+          curl -sf "http://127.0.0.1:${APP_PORT:-8080}/up"

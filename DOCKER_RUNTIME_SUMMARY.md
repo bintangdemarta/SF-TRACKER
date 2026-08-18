@@ -131,3 +131,46 @@ Catatan build:
 
 - `Dockerfile` diperbaiki agar membuat direktori runtime Laravel sebelum `composer dump-autoload`.
 - Tanpa direktori `storage/framework/views` dan cache terkait, build image gagal pada `artisan package:discover` dengan error `Please provide a valid cache path`.
+
+## Production Auto-Deploy Design
+
+Target production sekarang menggunakan image dari GHCR, bukan build source lokal di VM.
+
+Runtime production VM:
+
+- Deploy path: `/home/sftracker/sf-tracker-production`
+- Compose file: `/home/sftracker/sf-tracker-production/docker-compose.deploy.yml`
+- Env file: `/home/sftracker/sf-tracker-production/.env.production`
+- Image: `ghcr.io/bintangdemarta/sf-tracker:main` atau tag SHA dari CI
+- URL LAN: `http://10.10.10.249:8080`
+- Laravel env: `production`
+- Debug mode: `false`
+
+Auto-deploy production harus memakai GitHub self-hosted runner di VM homelab, bukan GitHub-hosted runner. Alasannya, GitHub-hosted runner tidak bisa menjangkau IP privat `10.10.10.249` di LAN.
+
+Runner requirement:
+
+- Lokasi runner: VM `sf-tracker-dev` (`10.10.10.249`)
+- User runner: `sftracker`
+- Required labels: `self-hosted`, `linux`, `x64`, `sf-tracker-production`
+- Required GitHub variable: `PRODUCTION_DEPLOY_ENABLED=true`
+- Optional GitHub variable: `PRODUCTION_DEPLOY_PATH=/home/sftracker/sf-tracker-production`
+
+Production deploy flow:
+
+```text
+Push to main
+  -> GitHub Actions lint
+  -> PHPUnit tests
+  -> Build and push image to GHCR
+  -> Self-hosted runner inside VM pulls image
+  -> Docker Compose updates production stack
+  -> Laravel migrate + ExpenseCategorySeeder
+  -> Health check /up
+```
+
+Catatan kritis:
+
+- Jangan menggunakan GitHub-hosted runner untuk SSH langsung ke `10.10.10.249`; IP tersebut private LAN dan tidak routable dari GitHub cloud.
+- Jangan commit `.env.production`; file ini harus tetap berada di VM atau secret manager.
+- Auto-deploy belum bisa aktif penuh sampai self-hosted runner diregistrasikan di GitHub repository dan variable `PRODUCTION_DEPLOY_ENABLED` diset `true`.
