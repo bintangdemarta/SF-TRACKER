@@ -1,4 +1,4 @@
-﻿# Ringkasan Migrasi Runtime Docker SF-Tracker
+# Ringkasan Migrasi Runtime Docker SF-Tracker
 
 Tanggal: 2026-08-18
 
@@ -153,7 +153,6 @@ Runner requirement:
 - Lokasi runner: VM `sf-tracker-dev` (`10.10.10.249`)
 - User runner: `sftracker`
 - Required labels: `self-hosted`, `linux`, `x64`, `sf-tracker-production`
-- Required GitHub variable: `PRODUCTION_DEPLOY_ENABLED=true`
 - Optional GitHub variable: `PRODUCTION_DEPLOY_PATH=/home/sftracker/sf-tracker-production`
 
 Production deploy flow:
@@ -173,4 +172,4 @@ Catatan kritis:
 
 - Jangan menggunakan GitHub-hosted runner untuk SSH langsung ke `10.10.10.249`; IP tersebut private LAN dan tidak routable dari GitHub cloud.
 - Jangan commit `.env.production`; file ini harus tetap berada di VM atau secret manager.
-- Auto-deploy belum bisa aktif penuh sampai self-hosted runner diregistrasikan di GitHub repository dan variable `PRODUCTION_DEPLOY_ENABLED` diset `true`.
+- Auto-deploy production aktif untuk setiap push ke branch `main` setelah self-hosted runner online.

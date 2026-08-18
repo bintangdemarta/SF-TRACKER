@@ -143,7 +143,7 @@ jobs:
     name: Deploy to Production
     runs-on: [self-hosted, linux, x64, sf-tracker-production]
     needs: build-and-push
-    if: github.ref == 'refs/heads/main' && vars.PRODUCTION_DEPLOY_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main'
     environment: production
     steps:
       - uses: actions/checkout@v4
