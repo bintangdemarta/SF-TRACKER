@@ -165,4 +165,11 @@ jobs:
           docker compose -f docker-compose.deploy.yml --env-file .env.production exec -T app php artisan migrate --force
           docker compose -f docker-compose.deploy.yml --env-file .env.production exec -T app php artisan db:seed --class=ExpenseCategorySeeder --force
           APP_PORT=$(grep '^APP_PORT=' .env.production | cut -d= -f2)
-          curl -sf "http://127.0.0.1:${APP_PORT:-8080}/up"
+          for attempt in {1..30}; do
+            if curl -sf "http://127.0.0.1:${APP_PORT:-8080}/up"; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose -f docker-compose.deploy.yml --env-file .env.production logs --tail=100 app
+          exit 1
