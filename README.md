@@ -1,67 +1,149 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SF-Tracker
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+SF-Tracker adalah aplikasi pencatatan dan analisis operasional untuk driver ShopeeFood. Fokus utamanya adalah membantu driver menghitung performa shift, pendapatan bersih, biaya operasional, transaksi dompet, dan laporan historis berbasis data.
 
-## About Laravel
+> Status: aktif dikembangkan menuju sistem production-ready dengan pipeline Docker, CI, dan auto-deploy ke homelab production.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Ringkasan Sistem
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Domain utama:** tracking shift, trip/order, expense, dual-wallet ledger, dan laporan historis.
+- **Target pengguna:** driver gig-economy/food delivery yang membutuhkan kontrol finansial harian.
+- **Runtime lokal:** Docker Compose, tidak lagi bergantung pada XAMPP.
+- **Runtime production:** self-hosted VM di homelab dengan image dari GitHub Container Registry.
+- **CI/CD:** GitHub Actions menjalankan lint, test, build image, push image, dan deploy production.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Tech Stack
 
-## Learning Laravel
+- **Backend:** PHP 8.2, Laravel 11
+- **Frontend:** Livewire 3, Volt, Blade, Tailwind CSS, Vite
+- **Database:** MySQL 8
+- **Testing & Quality:** PHPUnit, Laravel Pint, Larastan/PHPStan
+- **Container:** Docker, Docker Compose, Nginx, PHP-FPM
+- **Registry:** GitHub Container Registry (`ghcr.io`)
+- **Deployment:** GitHub Actions self-hosted runner di VM production
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Modul Aplikasi
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+- **Shift Tracker:** mencatat sesi kerja, waktu mulai/selesai, dan metrik operasional.
+- **Trip Log:** mencatat order/trip sebagai basis perhitungan performa.
+- **Expense Logger:** mencatat pengeluaran operasional seperti BBM dan biaya kendaraan.
+- **Wallet Ledger:** mencatat transaksi saldo dan kas untuk rekonsiliasi keuangan.
+- **Financial Dashboard:** menyajikan ringkasan performa finansial harian.
+- **Historical Report:** agregasi laporan historis dan export data.
+- **SEO Guides:** halaman panduan publik untuk akuisisi organik.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Arsitektur Runtime
 
-## Laravel Sponsors
+```text
+User Browser
+    |
+    v
+Nginx Container :8080
+    |
+    v
+PHP-FPM / Laravel App
+    |
+    +--> MySQL 8 Container
+    |
+    +--> Storage / Cache / Logs
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+GitHub Actions
+    |
+    +--> Test + Lint
+    +--> Build Docker Image
+    +--> Push GHCR Image
+    +--> Self-hosted Runner Pulls Image
+    +--> Docker Compose Production Up
+```
 
-### Premium Partners
+## Struktur Project
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+```text
+app/                    Core aplikasi: Controller, Livewire, Model, Service
+bootstrap/              Laravel bootstrap/cache runtime
+config/                 Konfigurasi framework dan package
+database/               Migration, factory, seeder
+resources/              Blade views, Livewire views, CSS, JS
+routes/                 Web/auth route definitions
+tests/                  PHPUnit feature/unit tests
+docker/                 Konfigurasi container runtime
+.github/workflows/      CI/CD pipeline
+Dockerfile              Image aplikasi production-ready
+docker-compose.yml      Runtime lokal development
+docker-compose.deploy.yml Runtime staging/production
+```
 
-## Contributing
+## Menjalankan Lokal dengan Docker
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Prasyarat:
 
-## Code of Conduct
+- Docker Desktop / Docker Engine
+- Docker Compose
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Langkah:
 
-## Security Vulnerabilities
+```bash
+cp .env.example .env
+docker compose up -d --build
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate --seed
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Akses aplikasi:
 
-## License
+```text
+http://localhost:8080
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# SF-TRACKER
+Health check:
+
+```text
+http://localhost:8080/up
+```
+
+## Quality Gate
+
+Jalankan sebelum merge/push perubahan penting:
+
+```bash
+docker compose exec app php artisan test
+docker compose exec app ./vendor/bin/pint --test
+docker compose exec app ./vendor/bin/phpstan analyse
+npm run build
+```
+
+## Deployment Production
+
+Production menggunakan workflow GitHub Actions:
+
+1. Push ke branch `main`.
+2. CI menjalankan lint, static analysis, test, dan build frontend.
+3. Image aplikasi dibuild dan dipush ke GHCR.
+4. Self-hosted runner di VM production menarik image terbaru.
+5. Docker Compose production menjalankan migration, seeder kategori expense, dan health check.
+
+Production endpoint saat ini:
+
+```text
+http://10.10.10.249:8080
+```
+
+## Prinsip Engineering
+
+- Gunakan Docker sebagai runtime standar; hindari dependency lokal seperti XAMPP.
+- Utamakan agregasi database untuk laporan dan metrik historis.
+- Jaga invariant finansial di level database/service, bukan hanya UI.
+- Semua perubahan production harus lewat Git, CI, image registry, dan deploy pipeline.
+- Jangan simpan secret production di repository.
+
+## Risiko dan Roadmap Kritis
+
+- **Self-hosted runner public repo:** batasi workflow trigger, permission token, dan akses host.
+- **Database durability:** perlu strategi backup MySQL terjadwal dan restore drill.
+- **Security hardening:** tambah TLS/reverse proxy, secret management, dan least-privilege runner user.
+- **Observability:** tambah structured logging, metrics, dan alerting untuk failure deploy/runtime.
+- **Data integrity:** audit transaksi wallet/shift agar atomic dan konsisten saat concurrency.
+
+## Lisensi
+
+Belum ditentukan secara eksplisit untuk distribusi publik. Tentukan lisensi sebelum repository dipakai sebagai artefak akademik atau production open-source.
